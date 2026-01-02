@@ -1,0 +1,46 @@
+services:
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: always
+
+    environment:
+      - CF_DNS_API_TOKEN=0545-SWi_l6zbLNlv6NlRpZncbbR3BBpLyAHrzhB
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+
+      - "--certificatesresolvers.myresolver.acme.dnschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.dnschallenge.provider=cloudflare"
+      - "--certificatesresolvers.myresolver.acme.email=burhanfauzisalam@gmail.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+
+    labels:
+      - "traefik.enable=true"
+
+      # === TRAEFIK DASHBOARD (SUBDOMAIN) ===
+      - "traefik.http.routers.traefik.rule=Host(`traefik.burhanfs.my.id`)"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.tls.certresolver=myresolver"
+      - "traefik.http.routers.traefik.service=api@internal"
+
+    ports:
+      - "443:443"
+      - "80:80"
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt/acme.json:/letsencrypt/acme.json
+
+    networks:
+      - web
+
+networks:
+  web:
+    external: true
